@@ -9,11 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.templateresolver.FileTemplateResolver;
-
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 @WebServlet(value = "/time")
@@ -34,44 +30,25 @@ public class TimeServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String rowLocalDateTime;
-
-        StringBuilder stringBuilder = new StringBuilder();
+        String localDateTime;
         if (Utils.hasParameter(req, Utils.TIME_ZONE_PATH)) {
             resp.addCookie(new Cookie("lastTimezone", req.getParameter(Utils.TIME_ZONE_PATH)));
             String zoneId = req.getParameter(Utils.TIME_ZONE_PATH);
-            rowLocalDateTime = LocalDateTime.now(ZoneId.of(zoneId))
-                    .format(DateTimeFormatter
-                            .ofPattern("yyyy-MM-dd HH:mm:ss"));
-            stringBuilder.append(rowLocalDateTime);
-            stringBuilder.append(" ").append(zoneId);
-
+            localDateTime = Utils.getLocalDateTime(zoneId);
         } else {
-
             Cookie[] cookies = req.getCookies();
             String lastTimeZone = "UTC";
-            if(cookies!= null) {
-                for(int i = 0; i<cookies.length; i++) {
-                    if(cookies[i].getName().equals("lastTimezone")) {
+            if (cookies != null) {
+                for (int i = 0; i < cookies.length; i++) {
+                    if (cookies[i].getName().equals("lastTimezone")) {
                         lastTimeZone = cookies[i].getValue();
                     }
                 }
             }
-            if(!lastTimeZone.equals("UTC")) {
-                rowLocalDateTime = LocalDateTime.now(ZoneId.of(lastTimeZone))
-                        .format(DateTimeFormatter
-                                .ofPattern("yyyy-MM-dd HH:mm:ss"));
-                stringBuilder.append(rowLocalDateTime);
-            } else {
-                rowLocalDateTime = LocalDateTime.now()
-                        .format(DateTimeFormatter
-                                .ofPattern("yyyy-MM-dd HH:mm:ss"));
-                stringBuilder.append(rowLocalDateTime);
-            }
-            stringBuilder.append(" " + lastTimeZone);
+            localDateTime = Utils.getLocalDateTime(lastTimeZone);
         }
         resp.setContentType("text/html");
-        Context simpleContext = new Context(req.getLocale(), Map.of("time",stringBuilder.toString()));
+        Context simpleContext = new Context(req.getLocale(), Map.of("time", localDateTime));
         engine.process("current_time", simpleContext, resp.getWriter());
         resp.getWriter().close();
     }
